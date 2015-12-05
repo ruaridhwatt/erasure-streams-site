@@ -1,46 +1,40 @@
 var socket;
+var uploading = false;
 
-$(window).on('beforeunload', function(){
-    socket.close();
+$(window).on('beforeunload', function() {
+	socket.close();
 });
 
 $(document).ready(function() {
-
+	
 	// Check for the various File API support.
 	if (window.File && window.Blob) {
 
 		socket = new WebSocket("ws://localhost:8888", "init");
 
 		$(document).on('change', '.btn-file :file', function(event) {
+			setProgressBar(0, 100);
 			var file = event.target.files[0];
-			$('h2.video-title').html(file.name);
-			$('div.video-wrapper').html(buildVideo(file));
+			showVideo(file);
+			showUpload(file);
 		});
 
 		$(document).on('click', '.btn-upload', function(event) {
-			$('.prog-upload').prop('style', "width: 0%");
-			$('.prog-upload').prop('aria-valuenow', "0");
-			$('.prog-upload').html("0%");
-			$('.progress').show("slow");
 			var file = $('.btn-file :file').prop('files')[0];
-			var slicer = new FileSlicer(file);
-			while (slicer.hasNext()) {
-				socket.send(slicer.next());
-			}
-			var progressInterval = setInterval(function(total) {
-
-				if (socket.bufferedAmount == 0) {
-					clearInterval(progressInterval);
-					$('.progress').hide("slow");
-				} else {
-					var progress = Math.round(((total - socket.bufferedAmount) / total) * 100);
-					var progStr = progress + "%";
-					console.log(progStr);
-					$('.prog-upload').prop('style', "width: " + progStr);
-					$('.prog-upload').prop('aria-valuenow', progress.toString());
-					$('.prog-upload').html(progStr);
+			if (file && !uploading) {
+				uploading = true;
+				var slicer = new FileSlicer(file);
+				while (slicer.hasNext()) {
+					socket.send(slicer.next());
 				}
-			}, 200, file.size);
+
+				var progressInterval = setInterval(function(total) {
+					setProgressBar(total - socket.bufferedAmount, total);
+					if (socket.bufferedAmount == 0) {
+						clearInterval(progressInterval);
+					}
+				}, 100, file.size);
+			}
 		});
 
 	} else {
@@ -60,9 +54,28 @@ function buildVideo(file) {
 	return video;
 }
 
+function showVideo(file) {
+	if (file) {
+		$('h2.video-title').html(file.name);
+		$('div.video-wrapper').html(buildVideo(file));
+	} else {
+		$('h2.video-title').html("");
+		$('div.video-wrapper').html("");
+	}
+	
+}
+
+function showUpload(bool) {
+	if (bool) {
+		$('.progress-upload').show();
+	} else {
+		$('.progress-upload').hide();
+	}
+}
+
 function FileSlicer(file) {
 
-	this.SLICE_SIZE = 10*1024*1024;
+	this.SLICE_SIZE = 10 * 1024 * 1024;
 	this.start = 0;
 	this.end = this.SLICE_SIZE;
 
@@ -76,4 +89,13 @@ function FileSlicer(file) {
 		this.end = Math.min(this.end + this.SLICE_SIZE, file.size);
 		return slice;
 	};
+}
+
+function setProgressBar(bytesUploaded, total) {
+	var percent = Math.round(bytesUploaded * 100 / total);
+	$('.progress-upload').prop('value', percent);
+	if (bytesUploaded == total) {
+		uploading = false;
+		showUpload(false);
+	}
 }
