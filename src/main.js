@@ -3,6 +3,17 @@ var socket;
 var uploading = false;
 var intention = null;
 
+socket = new WebSocket(entryPoint, "upload");
+socket.onmessage = function(messageEvent) {
+	var received = messageEvent.data;
+	console.log(socket.binaryType);
+	console.log(received);
+	console.log(typeof received);
+	if (typeof received == 'string') {
+		handleCommand(received);
+	}
+};
+
 $(window).on('beforeunload', function() {
 	socket.close();
 });
@@ -11,17 +22,6 @@ $(document).ready(function() {
 
 	// Check for the various File API support.
 	if (window.File && window.Blob) {
-
-		socket = new WebSocket(entryPoint, "upload");
-		socket.onmessage = function(messageEvent) {
-			var received = messageEvent.data;
-			console.log(socket.binaryType);
-			console.log(received);
-			console.log(typeof received);
-			if (typeof received == 'string') {
-				handleCommand(received);
-			}
-		};
 
 		$(document).on('change', '.btn-file :file', function(event) {
 			setProgressBar(0, 100);
