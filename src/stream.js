@@ -1,102 +1,83 @@
-var video = document.getElementById('v');
-// Create the media source
-var mimeCodec = 'video/mp4; codecs="avc1.640028"';
-var mediaSource;
+var entryPoint = 'ws://localhost:8888';
+var socket;
+var intention = 'lst';
 
-$(document).ready(function() {
+//wsConnect(entrypoint);
+// Test---------------------------------
+var streams = ['video-list', 'film1', 'film2', 'film3'];
+var list = '';
+for (var i = 1; i < streams.length; i++) {
+	list += '<li><a href="#">' + streams[i] + '</a></li>';
+}
+$('.streams').html(list);
+$('.streams a').on('click', function(event) {
+	console.log($(this).text());
+});
+//------------------------------------------
 
-	// Check for the various File API support.
-	if (window.File && window.Blob) {
+function wsConnect(url) {
+	console.log('Opening Websocket to ' + url + '...');
+	socket = new WebSocket(entryPoint, 'info');
 
-		$(document).on('change', '.btn-file :file', function(event) {
-			var file = event.target.files[0];
-			$('h2.video-title').html(file.name);
-			if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodec)) {
-				mediaSource = new MediaSource;
-				console.log(mediaSource.readyState); // closed
-				video.src = URL.createObjectURL(mediaSource);
-				mediaSource.addEventListener('sourceopen', onSourceOpen);
-			} else {
-				console.error('Unsupported MIME type or codec: ', mimeCodec);
-			}
-		});
+	socket.onopen = function(openEvent) {
+		console.log('Opened!');
+		if (intention) {
+			socket.send(intention);
+		}
+	};
 
-	} else {
-		alert('The File APIs are not fully supported in this browser.');
-	}
+	socket.onmessage = function(messageEvent) {
+		var received = messageEvent.data;
+		console.log(received);
+		handleCommand(received);
+	};
+
+	socket.onerror = function(errorEvent) {
+		console.log('Error in connection to ' + url);
+		console.log(errorEvent);
+	};
+}
+
+$(window).on('beforeunload', function() {
+	socket.close();
 });
 
-function onSourceOpen(_) {
-	console.log(this.readyState); // open
-	var file = $('.btn-file :file').prop('files')[0];
-	if (!file) {
-		return;
-	}
-	var slicer = new FileSlicer(file);
-	
-	if (mediaSource.sourceBuffers.length > 0) {
-		console.log('mediaSource.sourceBuffers.length > 0');
-		return;
-	}
-
-	var sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
-	
-	//video.addEventListener('progress', appendNextMediaSegment);
-	sourceBuffer.addEventListener('updateend', appendNextMediaSegment);
-	
-	appendInitSegment();
-	//appendNextMediaSegment();
-	video.play();
-	
-	function appendInitSegment() {
-		var init = $('.btn-init :file').prop('files')[0];
-		var initReader = new FileReader();
-		initReader.onload = function() {
-			mediaSource.sourceBuffers[0].appendBuffer(this.result);
-		};
-		initReader.readAsArrayBuffer(init);
-	}
-
-	function appendNextMediaSegment() {
-		console.log("appending");
-		var fileReader = new FileReader();
-		fileReader.onload = function() {
-			mediaSource.sourceBuffers[0].appendBuffer(this.result);
-		};
-		if (mediaSource.readyState == "closed") {
-			console.log('mediaSource.readyState == closed');
-			return;
-		}
-
-		// If we have run out of stream data, then signal end of stream.
-		if (!slicer.hasNext()) {
-			return;
-		}
-
-		// Make sure the previous append is not still pending.
-		if (mediaSource.sourceBuffers[0].updating) {
-			console.log('mediaSource.sourceBuffers[0].updating');
-			return;
-		}
-
-		fileReader.readAsArrayBuffer(slicer.next());
+function handleCommand(received) {
+	var c = received.split('\t');
+	switch (c[0]) {
+	case ('video-list'):
+		intention = null;
+		createStreamList(c);
+		break;
+	case ("mpd-file"):
+		intention = null;
+		parseMpd(c);
+		break;
+	case ("swith-server"):
+		socket.close();
+		wsConnect(c[1]);
+		break;
+	default:
+		console.log('unknown command: ' + c[0]);
+		break;
 	}
 }
 
-function FileSlicer(file) {
+function creatStreamList(streams) {
+	var list = '';
+	for (var i = 1; i < streams.length; i++) {
+		list += '<li><a href="#">' + streams[i] + '</a></li>';
+	}
+	$('.streams').html(list);
+	$('.streams: a').on('click', function(event) {
+		console.log(event + 'clicked');
+	});
+}
 
-	this.SLICE_SIZE = 1024*1024;
-	this.start = 0;
-	this.end = this.SLICE_SIZE;
+function streamChosen(event) {
 
-	this.hasNext = function() {
-		return (this.start < file.size);
-	};
+}
 
-	this.next = function() {
-		var slice = file.slice(this.start, this.end);
-		this.start = this.end;
-		this.end = Math.min(this.end + this.SLICE_SIZE, file.size);
-		return slice;
-	};
+function parceMpd(mpd) {
+
 }

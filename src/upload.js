@@ -87,8 +87,7 @@ function handleCommand(received) {
 function buildVideo(file) {
 	var video = $('<video />', {
 		id : 'video',
-		width : "600",
-		height : "400",
+		width : "500",
 		src : URL.createObjectURL(file),
 		type : 'video/mp4',
 		controls : true
@@ -119,10 +118,10 @@ function uploadFile() {
 
 function showVideo(file) {
 	if (file) {
-		$('h2.video-title').html(file.name);
+		$('#video-title').html(file.name);
 		$('div.video-wrapper').html(buildVideo(file));
 	} else {
-		$('h2.video-title').html("");
+		$('#video-title').html("");
 		$('div.video-wrapper').html("");
 	}
 

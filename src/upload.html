@@ -32,25 +32,30 @@
 			<div class="collapse navbar-collapse"
 				id="bs-example-navbar-collapse-1">
 				<ul class="nav navbar-nav">
-					<li class="active"><a href="index">Stream<span
+					<li><a href="index">Stream</a></li>
+					<li class="active"><a href="upload">Upload<span
 							class="sr-only">(current)</span></a></li>
-					<li><a href="upload">Upload</a></li>
-
-					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown" role="button" aria-haspopup="true"
-						aria-expanded="false">Choose Stream<span class="caret"></span></a>
-						<ul class="dropdown-menu scrollable-menu streams">
-						</ul>
-					</li>
 				</ul>
 			</div>
 			<!-- /.navbar-collapse -->
 		</div>
 		<!-- /.container-fluid -->
 	</nav>
+	<div class="text-center">
+		<div class="btn-group" role="group">
+			<span class="btn btn-default btn-file"> Choose Video... <input
+				type="file" accept="video/mp4">
+			</span> <span class="btn btn-default btn-upload"> Upload </span>
+		</div>
+	</div>
+	<div class="text-center">
+		<progress class="progress-upload" max="100" value="0" hidden="true">
+		</progress>
+	</div>
 
-	<video id="v" width="500px" controls></video>
 
+	<h2 id="video-title"></h2>
+	<div class="video-wrapper"></div>
 
 	<script
 		src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
@@ -58,6 +63,6 @@
 		src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
 		integrity="sha256-KXn5puMvxCw+dAYznun+drMdG1IFl3agK0p/pqT9KAo= sha512-2e8qq0ETcfWRI4HJBzQiA3UoyFk6tbNyG+qSaIBZLyW9Xf3sWZHN/lxe9fTh1U45DpPf07yj94KsUHHWe4Yk1A=="
 		crossorigin="anonymous"></script>
-	<script src="stream.js"></script>
+	<script src="upload.js"></script>
 </body>
 </html>
