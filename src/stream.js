@@ -1,81 +1,152 @@
-var entryPoint = 'ws://localhost:8888';
-var socket;
-var intention = 'lst';
+var wsServerUrl = "ws://localhost:8888";
+var infoSocket;
+var audioSocket;
+var videoSocket;
+var infoIntention = "lst";
+var audioIntention = null;
+var videoIntention = null;
 
-//wsConnect(entrypoint);
-// Test---------------------------------
-var streams = ['video-list', 'film1', 'film2', 'film3'];
-var list = '';
-for (var i = 1; i < streams.length; i++) {
-	list += '<li><a href="#">' + streams[i] + '</a></li>';
-}
-$('.streams').html(list);
-$('.streams a').on('click', function(event) {
-	console.log($(this).text());
+$(document).ready(function() {
+	//wsInfoConnect(); // use when using dedicated webserver
+	wsConnect(); // use when bypassing webserver
 });
-//------------------------------------------
 
-function wsConnect(url) {
-	console.log('Opening Websocket to ' + url + '...');
-	socket = new WebSocket(entryPoint, 'info');
+function wsInfoConnect() {
+	console.log("Opening Info Websocket to " + wsServerUrl + "...");
+	infoSocket = new WebSocket(wsServerUrl, "info");
 
-	socket.onopen = function(openEvent) {
-		console.log('Opened!');
-		if (intention) {
-			socket.send(intention);
+	infoSocket.onopen = function(openEvent) {
+		console.log("Info Socket Opened!");
+		if (infoIntention) {
+			infoSocket.send(infoIntention);
 		}
 	};
 
-	socket.onmessage = function(messageEvent) {
+	infoSocket.onmessage = function(messageEvent) {
 		var received = messageEvent.data;
 		console.log(received);
 		handleCommand(received);
 	};
 
-	socket.onerror = function(errorEvent) {
-		console.log('Error in connection to ' + url);
-		console.log(errorEvent);
+	infoSocket.onerror = function(errorEvent) {
+		console.log("Error in connection to " + wsServerUrl);
 	};
 }
 
-$(window).on('beforeunload', function() {
-	socket.close();
+function wsAudioConnect() {
+	console.log("Opening Audio Websockets to " + wsServerUrl + "...");
+	audioSocket = new WebSocket(wsServerUrl, "audio");
+
+	audioSocket.onopen = function(openEvent) {
+		console.log("Audio Socket Opened!");
+		if (audioIntention) {
+			infoSocket.send(audioIntention);
+		}
+	};
+
+	audioSocket.onmessage = function(messageEvent) {
+		var received = messageEvent.data;
+		if (typeof received == "string") {
+			handleCommand(received);
+		} else {
+			// TODO
+			bufferAudio(received);
+		}
+	};
+
+	audioSocket.onerror = function(errorEvent) {
+		console.log("Error in connection to " + wsServerUrl);
+	};
+}
+
+function wsVideoConnect() {
+	console.log("Opening Video Websockets to " + wsServerUrl + "...");
+	videoSocket = new WebSocket(wsServerUrl, "video");
+
+	videoSocket.onopen = function(openEvent) {
+		console.log("Video Socket Opened!");
+		if (videoIntention) {
+			infoSocket.send(videoIntention);
+		}
+	};
+
+	videoSocket.onmessage = function(messageEvent) {
+		var received = messageEvent.data;
+		if (typeof received == "string") {
+			handleCommand(received);
+		} else {
+			// TODO
+			bufferVideo(received);
+		}
+	};
+
+	videoSocket.onerror = function(errorEvent) {
+		console.log("Error in connection to " + wsServerUrl);
+	};
+}
+
+function wsConnect() {
+	wsInfoConnect();
+	wsAudioConnect();
+	wsVideoConnect();
+}
+
+function wsClose() {
+	infoSocket.close();
+	if (audioSocket)
+		audioSocket.close();
+	if (videoSocket)
+		videoSocket.close();
+}
+
+$(window).on("beforeunload", function() {
+	wsClose();
 });
 
 function handleCommand(received) {
-	var c = received.split('\t');
+	var c = received.split("\t");
 	switch (c[0]) {
-	case ('video-list'):
-		intention = null;
+	case ("video-list"):
+		infoIntention = null;
 		createStreamList(c);
 		break;
 	case ("mpd-file"):
-		intention = null;
+		infoIntention = null;
 		parseMpd(c);
 		break;
 	case ("swith-server"):
-		socket.close();
-		wsConnect(c[1]);
+		wsClose();
+		wsServerUrl = c[1];
+		wsConnect();
+		break;
+	case ("NOK"):
+		alert("File not found!");
 		break;
 	default:
-		console.log('unknown command: ' + c[0]);
+		console.log("unknown command: " + c[0]);
 		break;
 	}
 }
 
 function creatStreamList(streams) {
-	var list = '';
-	for (var i = 1; i < streams.length; i++) {
-		list += '<li><a href="#">' + streams[i] + '</a></li>';
+	var list = "";
+	for ( var i = 1; i < streams.length; i++) {
+		list += "<li><a href=\"#\">" + streams[i] + "</a></li>";
 	}
-	$('.streams').html(list);
-	$('.streams: a').on('click', function(event) {
-		console.log(event + 'clicked');
+	$(".streams").html(list);
+	$(".streams a").on("click", function(event) {
+		var filename = $(this).text();
+		startStreaming(filename);
 	});
 }
 
-function streamChosen(event) {
-
+function startStreaming(filename) {
+	// TODO get and parse MPD
+	// TODO create relevant mediasource
+	audioIntention = "stm\t" + filename;
+	videoIntention = "stm\t" + filename;
+	audioSocket.send(audioIntention);
+	videoSocket.send(videoIntention);
 }
 
 function parceMpd(mpd) {

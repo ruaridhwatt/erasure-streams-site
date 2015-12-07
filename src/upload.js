@@ -1,51 +1,35 @@
-var entryPoint = "ws://localhost:8888";
+var wsServerUrl = "ws://localhost:8888";
 var socket;
 var uploading = false;
 var intention = null;
 
-socket = new WebSocket(entryPoint, "upload");
-socket.onmessage = function(messageEvent) {
-	var received = messageEvent.data;
-	console.log(socket.binaryType);
-	console.log(received);
-	console.log(typeof received);
-	if (typeof received == 'string') {
-		handleCommand(received);
-	}
-};
+wsConnect();
 
-$(window).on('beforeunload', function() {
+$(window).on("beforeunload", function() {
 	socket.close();
 });
 
 $(document).ready(function() {
 
-	// Check for the various File API support.
-	if (window.File && window.Blob) {
+	$(document).on("change", ".btn-file :file", function(event) {
+		setProgressBar(0, 100);
+		var file = event.target.files[0];
+		showVideo(file);
+		showUpload(file);
+	});
 
-		$(document).on('change', '.btn-file :file', function(event) {
-			setProgressBar(0, 100);
-			var file = event.target.files[0];
-			showVideo(file);
-			showUpload(file);
-		});
-
-		$(document).on('click', '.btn-upload', function(event) {
-			intention = 'start-upload';
-			socket.send(intention);
-		});
-
-	} else {
-		alert('The File APIs are not fully supported in this browser.');
-	}
+	$(document).on("click", ".btn-upload", function(event) {
+		intention = "start-upload";
+		socket.send(intention);
+	});
 });
 
-function wsConnect(url) {
-	console.log('Opening Websocket to ' + url + '...');
-	socket = new WebSocket(entryPoint, "upload");
+function wsConnect() {
+	console.log("Opening Websocket to " + wsServerUrl + "...");
+	socket = new WebSocket(wsServerUrl, "upload");
 
 	socket.onopen = function(openEvent) {
-		console.log('Opened!');
+		console.log("Opened!");
 		if (intention) {
 			socket.send(intention);
 		}
@@ -53,50 +37,46 @@ function wsConnect(url) {
 
 	socket.onmessage = function(messageEvent) {
 		var received = messageEvent.data;
-		console.log(received);
-		if (reseived instanceof DOMString) {
-			handleCommand(received);
-		}
+		handleCommand(received);
 	};
 
 	socket.onerror = function(errorEvent) {
-		console.log('Error in connection to ' + url);
-		console.log(errorEvent);
+		console.log("Error in connection to " + wsServerUrl);
 	};
 }
 
 function handleCommand(received) {
-	var c = received.split('\t');
+	var c = received.split("\t");
 	switch (c[0]) {
 	case ("OK"):
-		console.log("Hello");
-		if (intention == 'start-upload') {
+		if (intention == "start-upload") {
 			uploadFile();
 		}
 		break;
 	case ("swith-server"):
 		socket.close();
-		wsConnect(c[1]);
+		wsServerUrl = c[1];
+		wsConnect();
 		break;
 	default:
-		console.log('unknown command: ' + c[0]);
+		console.log("Unknown command: " + c[0]);
 		break;
 	}
 }
 
 function buildVideo(file) {
-	var video = $('<video />', {
-		id : 'video',
+	var video = $("<video />", {
+		id : "video",
 		width : "500",
 		src : URL.createObjectURL(file),
-		type : 'video/mp4',
+		type : "video/mp4",
 		controls : true
 	});
 	return video;
 }
 
 function uploadFile() {
-	var file = $('.btn-file :file').prop('files')[0];
+	var file = $(".btn-file :file").prop("files")[0];
 	if (file && !uploading) {
 		uploading = true;
 		var slicer = new FileSlicer(file);
@@ -118,20 +98,20 @@ function uploadFile() {
 
 function showVideo(file) {
 	if (file) {
-		$('#video-title').html(file.name);
-		$('div.video-wrapper').html(buildVideo(file));
+		$("#video-title").html(file.name);
+		$("div.video-wrapper").html(buildVideo(file));
 	} else {
-		$('#video-title').html("");
-		$('div.video-wrapper').html("");
+		$("#video-title").html("");
+		$("div.video-wrapper").html("");
 	}
 
 }
 
 function showUpload(bool) {
 	if (bool) {
-		$('.progress-upload').show();
+		$(".progress-upload").show();
 	} else {
-		$('.progress-upload').hide();
+		$(".progress-upload").hide();
 	}
 }
 
@@ -155,7 +135,7 @@ function FileSlicer(file) {
 
 function setProgressBar(bytesUploaded, total) {
 	var percent = Math.round(bytesUploaded * 100 / total);
-	$('.progress-upload').prop('value', percent);
+	$(".progress-upload").prop("value", percent);
 	if (bytesUploaded == total) {
 		uploading = false;
 		showUpload(false);
