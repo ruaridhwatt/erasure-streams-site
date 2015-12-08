@@ -1,13 +1,21 @@
 var wsServerUrl = "ws://localhost:8888";
-var infoSocket;
-var audioSocket;
-var videoSocket;
+
+var infoSocket = null;
+var audioSocket = null;
+var videoSocket = null;
+
 var infoIntention = "lst";
 var audioIntention = null;
 var videoIntention = null;
 
+var filename = null;
+var video = document.getElementById('v');
+var mediaSource = null;
+var audioAppender = null;
+var videoAppender = null;
+
 $(document).ready(function() {
-	//wsInfoConnect(); // use when using dedicated webserver
+	// wsInfoConnect(); // use when using dedicated webserver
 	wsConnect(); // use when bypassing webserver
 });
 
@@ -48,9 +56,8 @@ function wsAudioConnect() {
 		var received = messageEvent.data;
 		if (typeof received == "string") {
 			handleCommand(received);
-		} else {
-			// TODO
-			bufferAudio(received);
+		} else if (audioAppender) {
+			audioAppender.appendBlob(received);
 		}
 	};
 
@@ -74,9 +81,8 @@ function wsVideoConnect() {
 		var received = messageEvent.data;
 		if (typeof received == "string") {
 			handleCommand(received);
-		} else {
-			// TODO
-			bufferVideo(received);
+		} else if (videoAppender) {
+			videoAppender.appendBlob(received);
 		}
 	};
 
@@ -112,7 +118,7 @@ function handleCommand(received) {
 		break;
 	case ("mpd-file"):
 		infoIntention = null;
-		parseMpd(c);
+		createMediaSource(new Mpd(c));
 		break;
 	case ("swith-server"):
 		wsClose();
@@ -121,6 +127,17 @@ function handleCommand(received) {
 		break;
 	case ("NOK"):
 		alert("File not found!");
+		infoIntention = "lst";
+		audioAppender = audioIntention = null;
+		videoAppender = videoIntention = null;
+		break;
+	case ("EOA"):
+		console.log("Audio buffering complete");
+		audioAppender = audioIntention = null;
+		break;
+	case ("EOV"):
+		console.log("Video buffering complete");
+		videoAppender = videoIntention = null;
 		break;
 	default:
 		console.log("unknown command: " + c[0]);
@@ -135,20 +152,49 @@ function creatStreamList(streams) {
 	}
 	$(".streams").html(list);
 	$(".streams a").on("click", function(event) {
-		var filename = $(this).text();
-		startStreaming(filename);
+		filename = $(this).text();
+		startStreaming();
 	});
 }
 
-function startStreaming(filename) {
-	// TODO get and parse MPD
-	// TODO create relevant mediasource
-	audioIntention = "stm\t" + filename;
-	videoIntention = "stm\t" + filename;
-	audioSocket.send(audioIntention);
-	videoSocket.send(videoIntention);
+function startStreaming() {
+	infoIntention = "mpd\t" + filename;
+	infoSocket.send(intention);
 }
 
-function parceMpd(mpd) {
+function createMediaSource(mpd) {
+	mediaSource = new MediaSource;
+	video.src = URL.createObjectURL(mediaSource);
+	mediaSource.addEventListener('sourceopen', function() {
+		if (mpd.audioType) {
+			var audioBuffer = mediaSource.addSourceBuffer(mpd.audioType);
+			audioAppender = new MediaAppender(audioBuffer);
+			audioIntention = "get\t" + filename;
+			audioSocket.send("ini\t" + filename);
+		} else {
+			console.log("Audio codec not found in mpd");
+			audioIntention = null;
+		}
 
+		if (mpd.videoType) {
+			var videoBuffer = mediaSource.addSourceBuffer(mpd.videoType);
+			videoAppender = new MediaAppender(videoBuffer);
+			videoIntention = "get\t" + filename;
+			videoSocket.send("ini\t" + filename);
+		} else {
+			console.log("Video codec not found in mpd");
+			videoIntention = null;
+		}
+		mediaSource.removeEventListener('sourceopen', this);
+	});
+}
+
+function MediaAppender(sourceBuffer) {
+	var fileReader = new FileReader();
+	fileReader.onload = function() {
+		sourceBuffer.appendBuffer(this.result);
+	};
+	this.appendBlob = function(blob) {
+		filereader.readAsArrayBuffer(blob);
+	};
 }
