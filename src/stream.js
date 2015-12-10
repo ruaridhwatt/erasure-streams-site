@@ -1,4 +1,4 @@
-var wsServerUrl = "ws://localhost:8888";
+var wsServerUrl = "ws://dobby.cs.umu.se:8888";
 
 var infoSocket = null;
 var audioSocket = null;
@@ -6,7 +6,9 @@ var videoSocket = null;
 
 var infoIntention = "lst";
 var audioIntention = null;
+var audioInd = 0;
 var videoIntention = null;
+var videoInd = 0;
 
 var filename = null;
 var video = document.getElementById('v');
@@ -33,7 +35,19 @@ function wsInfoConnect() {
 	infoSocket.onmessage = function(messageEvent) {
 		var received = messageEvent.data;
 		console.log(received);
-		handleCommand(received);
+		if (typeof received == "string") {
+			handleCommand(received);
+		} else {
+			infoIntention = null;
+			var mpd;
+			var fileReader = new FileReader();
+			fileReader.onload = function() {
+				mpd = new Mpd(this.result);
+				createMediaSource(mpd);
+			};
+			fileReader.readAsText(received);
+
+		}
 	};
 
 	infoSocket.onerror = function(errorEvent) {
@@ -83,6 +97,7 @@ function wsVideoConnect() {
 			handleCommand(received);
 		} else if (videoAppender) {
 			videoAppender.appendBlob(received);
+			requestNextBlob(videoSocket, );
 		}
 	};
 
@@ -93,7 +108,7 @@ function wsVideoConnect() {
 
 function wsConnect() {
 	wsInfoConnect();
-	wsAudioConnect();
+	//wsAudioConnect();
 	wsVideoConnect();
 }
 
@@ -115,10 +130,6 @@ function handleCommand(received) {
 	case ("video-list"):
 		infoIntention = null;
 		createStreamList(c);
-		break;
-	case ("mpd-file"):
-		infoIntention = null;
-		createMediaSource(new Mpd(c));
 		break;
 	case ("swith-server"):
 		wsClose();
@@ -145,7 +156,7 @@ function handleCommand(received) {
 	}
 }
 
-function creatStreamList(streams) {
+function createStreamList(streams) {
 	var list = "";
 	for ( var i = 1; i < streams.length; i++) {
 		list += "<li><a href=\"#\">" + streams[i] + "</a></li>";
@@ -159,30 +170,30 @@ function creatStreamList(streams) {
 
 function startStreaming() {
 	infoIntention = "mpd\t" + filename;
-	infoSocket.send(intention);
+	infoSocket.send(infoIntention);
 }
 
 function createMediaSource(mpd) {
 	mediaSource = new MediaSource;
 	video.src = URL.createObjectURL(mediaSource);
 	mediaSource.addEventListener('sourceopen', function() {
-		if (mpd.audioType) {
+		audioInd = 0;
+		videoInd = 0;
+		if (mpd.audioType && audioSocket) {
 			var audioBuffer = mediaSource.addSourceBuffer(mpd.audioType);
 			audioAppender = new MediaAppender(audioBuffer);
-			audioIntention = "get\t" + filename;
 			audioSocket.send("ini\t" + filename);
 		} else {
-			console.log("Audio codec not found in mpd");
+			console.log("Audio stream could not be initialised!");
 			audioIntention = null;
 		}
 
-		if (mpd.videoType) {
+		if (mpd.videoType && videoSocket) {
 			var videoBuffer = mediaSource.addSourceBuffer(mpd.videoType);
 			videoAppender = new MediaAppender(videoBuffer);
-			videoIntention = "get\t" + filename;
 			videoSocket.send("ini\t" + filename);
 		} else {
-			console.log("Video codec not found in mpd");
+			console.log("Video stream could not be initialised!");
 			videoIntention = null;
 		}
 		mediaSource.removeEventListener('sourceopen', this);
@@ -195,6 +206,7 @@ function MediaAppender(sourceBuffer) {
 		sourceBuffer.appendBuffer(this.result);
 	};
 	this.appendBlob = function(blob) {
-		filereader.readAsArrayBuffer(blob);
+		console.log("appending: " );
+		fileReader.readAsArrayBuffer(blob);
 	};
 }

@@ -1,4 +1,4 @@
-var wsServerUrl = "ws://localhost:8888";
+var wsServerUrl = "ws://dobby.cs.umu.se:8888";
 var socket;
 var uploading = false;
 var intention = null;
@@ -19,8 +19,11 @@ $(document).ready(function() {
 	});
 
 	$(document).on("click", ".btn-upload", function(event) {
-		intention = "start-upload";
-		socket.send(intention);
+		var file = $(".btn-file :file").prop("files")[0];
+		if (file) {
+			intention = "upl\t" + file.name;
+			socket.send(intention);
+		}
 	});
 });
 
@@ -47,11 +50,12 @@ function wsConnect() {
 
 function handleCommand(received) {
 	var c = received.split("\t");
+	console.log(c);
 	switch (c[0]) {
 	case ("OK"):
-		if (intention == "start-upload") {
-			uploadFile();
-		}
+		console.log("Uploading...");
+		uploadFile();
+		intention = null;
 		break;
 	case ("swith-server"):
 		socket.close();
