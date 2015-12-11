@@ -1,6 +1,6 @@
 function Mpd(mpdStr) {
-	this.audioType = null;
-	this.videoType = null;
+	this.audioCodecStr = null;
+	this.videoCodecStr = null;
 
 	// Parse xml
 	var mpd = (new DOMParser()).parseFromString(mpdStr, "text/xml");
@@ -17,7 +17,7 @@ function Mpd(mpdStr) {
 			var audioCodec = rep.getAttribute("codecs");
 			console.log(audioCodec);
 			if (audioCodec) {
-				this.audioType = mimeType + "; codecs=\"" + audioCodec + "\"";
+				this.audioCodecStr = mimeType + "; codecs=\"" + audioCodec + "\"";
 			}
 			break;
 		case "video/mp4":
@@ -25,7 +25,7 @@ function Mpd(mpdStr) {
 			var videoCodec = rep.getAttribute("codecs");
 			console.log(videoCodec);
 			if (videoCodec) {
-				this.videoType = mimeType + "; codecs=\"" + videoCodec + "\"";
+				this.videoCodecStr = mimeType + "; codecs=\"" + videoCodec + "\"";
 			}
 			break;
 		}

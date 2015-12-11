@@ -1,4 +1,4 @@
-var wsServerUrl = "ws://dobby.cs.umu.se:8888";
+var wsServerUrl = "ws://dobby.cs.umu.se:1337";
 var socket;
 var uploading = false;
 var intention = null;
