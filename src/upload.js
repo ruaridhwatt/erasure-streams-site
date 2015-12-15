@@ -1,4 +1,4 @@
-var wsServerUrl = "ws://dobby.cs.umu.se:1337";
+var wsServerUrl = "ws://rwgit.se:8888";
 var socket;
 var uploading = false;
 var intention = null;
