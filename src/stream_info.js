@@ -1,6 +1,6 @@
 var wsServerUrl = "ws://rwgit.se:8888";
 var infoSocket = null;
-var infoIntention = "lst";
+var command = "lst";
 var streamer;
 
 $(document).ready(function() {
@@ -13,8 +13,8 @@ function wsConnect() {
 
 	infoSocket.onopen = function(openEvent) {
 		console.log("Info Socket Opened!");
-		if (infoIntention) {
-			infoSocket.send(infoIntention);
+		if (command) {
+			infoSocket.send(command);
 		}
 	};
 
@@ -24,8 +24,8 @@ function wsConnect() {
 		if (typeof received == "string") {
 			handleCommand(received);
 		} else {
-			var filename = infoIntention.split("\t")[1];
-			infoIntention = null;
+			var filename = command.split("\t")[1];
+			command = null;
 			var videoElement = document.getElementById("v");
 
 			var fileReader = new FileReader();
@@ -50,7 +50,7 @@ function handleCommand(received) {
 	var c = received.split("\t");
 	switch (c[0]) {
 	case ("video-list"):
-		infoIntention = null;
+		command = null;
 		createStreamList(c);
 		break;
 	case ("swith-server"):
@@ -59,8 +59,8 @@ function handleCommand(received) {
 		wsConnect();
 		break;
 	case ("NOK"):
-		alert("File not found!");
-		infoIntention = "lst";
+		alert("Video unavailable!");
+		command = "lst";
 		audioAppender = audioIntention = null;
 		videoAppender = videoIntention = null;
 		break;
@@ -83,6 +83,6 @@ function createStreamList(streams) {
 }
 
 function startStreaming() {
-	infoIntention = "mpd\t" + filename;
-	infoSocket.send(infoIntention);
+	command = "mpd\t" + filename;
+	infoSocket.send(command);
 }

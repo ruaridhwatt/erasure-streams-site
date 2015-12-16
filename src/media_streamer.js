@@ -5,48 +5,82 @@ function MediaStreamer(filename, mpd, serverUrl, videoElem) {
 
 	function onSourceOpen() {
 		if (mediaSource.sourceBuffers.length > 0) {
+			console.log("Unable to create new Media Source!");
 			return;
 		}
 
-		audioTrack = new TrackStream(serverUrl, "audio", filename, mpd,
-				mediaSource);
-		videoElem.addEventListener('seeking', audioTrack.seeking
-				.bind(videoElem));
-		videoElem.addEventListener('progress', audioTrack.progress);
+		var audioSourceBuffer = mediaSource.addSourceBuffer(mpd.audioCodecStr);
+		var audioSegFactory = new SegmentFactory(serverUrl, "audio", filename);
+		var audioTrack = new StreamedTrack(audioSourceBuffer, audioSegFactory);
 
-		videoTrack = new TrackStream(serverUrl, "video", filename, mpd,
-				mediaSource);
-		videoElem.addEventListener('seeking', videoTrack.seeking
-				.bind(videoElem));
-		videoElem.addEventListener('progress', videoTrack.progress);
+		var videoSourceBuffer = mediaSource.addSourceBuffer(mpd.videoCodecStr);
+		var videoSegFactory = new SegmentFactory(serverUrl, "video", filename);
+		var videoTrack = new StreamedTrack(videoSourceBuffer, videoSegFactory);
+
 	}
 
 }
 
-function TrackStream(serverUrl, protocol, filename, mpd, mediaSource) {
-	var codec;
-	switch (protocol) {
-	case "audio":
-		codec = mpd.audioCodecStr;
-		break;
-	case "video":
-		codec = mpd.videoCodecStr;
-		break;
-	default:
-		console.log("Unknown protocol: " + protocol);
-		return;
-		break;
-	}
-	var sourceBuffer = mediaSource.addSourceBuffer(codec);
-	var iniBuffered = false;
-	var currSegId = 1;
-	var segIncoming = false;
-	var dataQueue = [];
+function StreamedTrack(sourceBuffer, segmentFactory) {
 
+	var appendData = function(res) {
+		sourceBuffer.appendBuffer(res);
+	};
+
+	var requestNextDataSeg = function() {
+		segmentFactory.next();
+	};
+
+	segmentFactory.setCallback(appendData);
+	sourceBuffer.addEventListener('update', requestNextDataSeg);
+	/* Request initial segment */
+	segmentFactory.next();
+}
+
+function SegmentFactory(initUrl, protocol, filename) {
+
+	var socket = null;
+	var i = 0;
 	var command = "ini\t" + filename;
+	var data = [];
 
-	var socket = new WebSocket(serverUrl, protocol);
-	setSocketEventHandlers();
+	function convertData() {
+		var fr = new FileReader();
+
+		fr.onload = function() {
+			data = [];
+			isWorking = false;
+			callback(this.result);
+		};
+
+		fr.readAsArrayBuffer(new Blob(data));
+	}
+
+	function handleCommand(received) {
+		var c = received.split("\t");
+
+		switch (c[0]) {
+		case ("swith-server"):
+			socket.close();
+			socket = new WebSocket(c[1], protocol);
+			setSocketEventHandlers();
+			break;
+		case ("EOV"):
+			this.hasNext = false;
+		case ("EOS"):
+			command = null;
+			convertData();
+			break;
+		case ("NOK"):
+			this.hasNext = false;
+			console.log(protocol + ": " + command);
+			console.log("NOK received!");
+			break;
+		default:
+			console.log("unknown command: " + c[0]);
+			break;
+		}
+	}
 
 	function setSocketEventHandlers() {
 		socket.onopen = function(openEv) {
@@ -60,74 +94,35 @@ function TrackStream(serverUrl, protocol, filename, mpd, mediaSource) {
 			if (typeof received == "string") {
 				handleCommand(received);
 			} else {
-				var fileReader = new FileReader();
-				fileReader.onload = function() {
-					dataQueue.push(this.result);
-				};
-				fileReader.readAsArrayBuffer(received);
-				if (!iniBuffered) {
-					command = null;
-					sourceBuffer.addEventListener('updateend', updateEnd);
-					updateEnd();
-				}
+				data.push(received);
 			}
 		};
 
 		socket.onerror = function(errorEv) {
-			console.log("Video Stream Connection Error");
+			console.log("Segment Factory Connection Error");
 		};
 	}
+	var callback = function(res) {
+		console.log("Callback not set");
+	};
+	var isWorking = false;
 
-	var updateEnd = function() {
-		if (dataQueue.length > 0 && !sourceBuffer.updating) {
-			sourceBuffer.appendBuffer(dataQueue.shift());
-		}
-		if (!iniBuffered) {
-			iniBuffered = true;
-			requestNextMediaSegment();
+	this.setCallback = function(f) {
+		callback = f;
+	};
+	this.hasNext = true;
+	this.next = function() {
+		if (!isWorking && this.hasNext) {
+			isWorking = true;
+			if (!command) {
+				command = "get\t" + filename + "\t" + (++i);
+			}
+			if (!socket) {
+				socket = new WebSocket(initUrl, protocol);
+				setSocketEventHandlers();
+			} else {
+				socket.send(command);
+			}
 		}
 	};
-
-	function requestNextMediaSegment() {
-		if (segIncoming) {
-			return false;
-		}
-
-		segIncoming = true;
-		command = "get\t" + filename + "\t" + currSegId++;
-		socket.send(command);
-	}
-
-	function handleCommand(received) {
-		var c = received.split("\t");
-		switch (c[0]) {
-		case ("swith-server"):
-			socket.close();
-			socket = new WebSocket(c[1], protocol);
-			setSocketEventHandlers();
-			break;
-		case ("NOK"):
-			console.log(protocol + ": " + command);
-			console.log("NOK received!");
-			break;
-		case ("EOS"):
-			command = null;
-			segIncoming = false;
-			updateEnd();
-			break;
-		default:
-			console.log("unknown command: " + c[0]);
-			break;
-		}
-	}
-
-	this.seeking = function(videoElem) {
-		console.log("seeking: " + videoElem.target.currentTime);
-	};
-
-	this.progress = function() {
-		console.log("Progressing " + protocol);
-		requestNextMediaSegment();
-	};
-
 }
