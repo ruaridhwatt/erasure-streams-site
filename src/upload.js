@@ -121,7 +121,7 @@ function showUpload(bool) {
 
 function FileSlicer(file) {
 
-	this.SLICE_SIZE = 10 * 1024 * 1024;
+	this.SLICE_SIZE = 10 * 131072;
 	this.start = 0;
 	this.end = this.SLICE_SIZE;
 
