@@ -1,4 +1,4 @@
-var wsServerUrl = "ws://rwgit.se:8888";
+var wsServerUrl = "ws://localhost:8888";
 var infoSocket = null;
 var command = "lst";
 var streamer;

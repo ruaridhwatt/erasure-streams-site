@@ -42,18 +42,15 @@ function SegmentFactory(initUrl, protocol, filename) {
 	var socket = null;
 	var i = 0;
 	var command = "ini\t" + filename;
-	var data = [];
 
-	function convertData() {
+	function convertData(data) {
 		var fr = new FileReader();
 
 		fr.onload = function() {
-			data = [];
-			isWorking = false;
 			callback(this.result);
 		};
 
-		fr.readAsArrayBuffer(new Blob(data));
+		fr.readAsArrayBuffer(data);
 	}
 
 	function handleCommand(received) {
@@ -65,16 +62,8 @@ function SegmentFactory(initUrl, protocol, filename) {
 			socket = new WebSocket(c[1], protocol);
 			setSocketEventHandlers();
 			break;
-		case ("EOV"):
-			this.hasNext = false;
 		case ("EOS"):
-			command = null;
-			convertData();
-			break;
-		case ("NOK"):
-			this.hasNext = false;
-			console.log(protocol + ": " + command);
-			console.log("NOK received!");
+			hasNext = false;
 			break;
 		default:
 			console.log("unknown command: " + c[0]);
@@ -90,11 +79,12 @@ function SegmentFactory(initUrl, protocol, filename) {
 			}
 		};
 		socket.onmessage = function(messageEv) {
+			command = null;
 			var received = messageEv.data;
 			if (typeof received == "string") {
 				handleCommand(received);
 			} else {
-				data.push(received);
+				convertData(received);
 			}
 		};
 
@@ -105,18 +95,17 @@ function SegmentFactory(initUrl, protocol, filename) {
 	var callback = function(res) {
 		console.log("Callback not set");
 	};
-	var isWorking = false;
 
 	this.setCallback = function(f) {
 		callback = f;
 	};
 	this.hasNext = true;
 	this.next = function() {
-		if (!isWorking && this.hasNext) {
-			isWorking = true;
+		if (this.hasNext) {
 			if (!command) {
 				command = "get\t" + filename + "\t" + (++i);
 			}
+			console.log(command);
 			if (!socket) {
 				socket = new WebSocket(initUrl, protocol);
 				setSocketEventHandlers();
