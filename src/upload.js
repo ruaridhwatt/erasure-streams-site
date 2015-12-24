@@ -54,8 +54,8 @@ function handleCommand(received) {
 	switch (c[0]) {
 	case ("OK"):
 		console.log("Uploading...");
-		uploadFile();
 		intention = null;
+		uploadFile();
 		break;
 	case ("swith-server"):
 		socket.close();
@@ -88,8 +88,7 @@ function uploadFile() {
 			socket.send(slicer.next());
 		}
 		terminator = new ArrayBuffer(1);
-		socket.send(terminator);
-		socket.send(terminator);
+		socket.send("fin");
 
 		var progressInterval = setInterval(function(total) {
 			setProgressBar(total - socket.bufferedAmount, total);
@@ -121,7 +120,7 @@ function showUpload(bool) {
 
 function FileSlicer(file) {
 
-	this.SLICE_SIZE = 10*1024*1024;
+	this.SLICE_SIZE = 10 * 1024 * 1024;
 	this.start = 0;
 	this.end = this.SLICE_SIZE;
 
