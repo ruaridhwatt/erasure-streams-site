@@ -1,2 +1,4 @@
 .project
 .settings
+.cproject
+name_bin/

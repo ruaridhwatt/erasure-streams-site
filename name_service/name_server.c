@@ -11,48 +11,60 @@
 #include <limits.h>
 
 #include "llist.h"
+#include "hashmap.h"
+#include "hashmap_settings.h"
 #include "ns_callback.h"
 #include "name_server.h"
 
-static struct libwebsocket_protocols protocols[] = { { "name_service", callback_ns, sizeof(struct toSend), 0 }, {
+static struct libwebsocket_protocols protocols[] = { { "intern", callback_ns, sizeof(struct toSend), 0 }, {
 NULL, NULL, 0 } };
 
 static volatile int force_exit = 0;
 
 int main(int argc, char *argv[]) {
-	int port, res, c;
+	int port, res, c, k, m;
 
 	struct lws_context_creation_info info;
 	struct libwebsocket_context *context;
 
 	signal(SIGINT, sighandler);
 
-	/* Parse command line arguments */
 	port = -1;
-	while ((c = getopt(argc, argv, "p:")) != -1) {
+	k = -1;
+	m = -1;
+	while ((c = getopt(argc, argv, "k:m:p:")) != -1) {
 		switch (c) {
+		case 'k':
+			res = str2int(optarg, &k);
+			break;
+		case 'm':
+			res = str2int(optarg, &m);
+			break;
 		case 'p':
 			res = str2int(optarg, &port);
 			break;
 		case '?':
-/*			print_usage(argv[0]);*/
 			exit(1);
 			break;
 		default:
-/*			print_usage(argv[0]);*/
 			exit(1);
 		}
+		if (res < 0) {
+			break;
+		}
+	}
+
+	if (res < 0 || port < 1024 || k <= 0 || m <= 0 || m > k) {
+		fprintf(stderr, "wrong input\n");
+		exit(1);
 	}
 
 	if (port < 1024 ) {
 		exit(1);
 	}
 
-	res = pthread_mutex_init(&mux, NULL);
-	if (res != 0) {
-		perror("pthread_mutex_init");
-		exit(1);
-	}
+	snprintf(kStr, K_STR_LEN, "%d", k);
+	snprintf(mStr, M_STR_LEN, "%d", m);
 
 	/* Create websockets server */
 
@@ -64,11 +76,11 @@ int main(int argc, char *argv[]) {
 
 	printf("starting server...\n");
 	init_server_list();
+	init_server_map();
 
 	context = libwebsocket_create_context(&info);
 	if (context == NULL) {
 		fprintf(stderr, "libwebsocket init failed\n");
-		pthread_mutex_destroy(&mux);
 		return EXIT_FAILURE;
 	}
 
@@ -76,8 +88,8 @@ int main(int argc, char *argv[]) {
 		libwebsocket_service(context, 500);
 	}
 	printf("stopping server...\n");
-	pthread_mutex_destroy(&mux);
-	llist_free(serverList);
+	free_server_list();
+	free_server_map();
 	libwebsocket_context_destroy(context);
 	return EXIT_SUCCESS;
 }
