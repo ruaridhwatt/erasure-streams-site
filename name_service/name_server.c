@@ -11,13 +11,12 @@
 #include <limits.h>
 
 #include "llist.h"
-#include "hashmap.h"
-#include "hashmap_settings.h"
 #include "ns_callback.h"
 #include "name_server.h"
 
-static struct libwebsocket_protocols protocols[] = { { "intern", callback_ns, sizeof(struct toSend), 0 }, {
-NULL, NULL, 0 } };
+static struct libwebsocket_protocols protocols[] = { { "intern", callback_intern, sizeof(struct per_session_data), 0 },
+		{ "name_service", callback_ns, sizeof(struct per_session_data), 0 },
+		{ NULL, NULL, 0 } };
 
 static volatile int force_exit = 0;
 
@@ -76,8 +75,6 @@ int main(int argc, char *argv[]) {
 
 	printf("starting server...\n");
 	init_server_list();
-	init_server_map();
-
 	context = libwebsocket_create_context(&info);
 	if (context == NULL) {
 		fprintf(stderr, "libwebsocket init failed\n");
@@ -88,9 +85,8 @@ int main(int argc, char *argv[]) {
 		libwebsocket_service(context, 500);
 	}
 	printf("stopping server...\n");
-	free_server_list();
-	free_server_map();
 	libwebsocket_context_destroy(context);
+	free_server_list();
 	return EXIT_SUCCESS;
 }
 
