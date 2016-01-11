@@ -14,7 +14,7 @@ $(document).ready(function() {
 		console.log(received);
 		var c = received.split("\t");
 		switch (c[0]) {
-		case ("swith-server"):
+		case ("switch-server"):
 			wsClose();
 			wsServerUrl = c[1];
 			wsConnect();
@@ -75,7 +75,7 @@ function handleCommand(received) {
 		command = null;
 		createStreamList(c);
 		break;
-	case ("swith-server"):
+	case ("switch-server"):
 		wsClose();
 		wsServerUrl = c[1];
 		wsConnect();
