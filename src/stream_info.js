@@ -1,10 +1,32 @@
-var wsServerUrl = "ws://localhost:8888";
+var wsServerUrl;
+var nsPort = 8888;
 var infoSocket = null;
 var command = "lst";
 var streamer;
 
 $(document).ready(function() {
-	wsConnect();
+	infoSocket = new WebSocket("ws://" + document.location.host + ":" + nsPort, "redirector");
+	infoSocket.onopen = function(openEvent) {
+		console.log("NS socket Opened!");
+	};
+	infoSocket.onmessage = function(messageEvent) {
+		var received = messageEvent.data;
+		console.log(received);
+		var c = received.split("\t");
+		switch (c[0]) {
+		case ("swith-server"):
+			wsClose();
+			wsServerUrl = c[1];
+			wsConnect();
+			break;
+		default:
+			console.log("unknown command: " + c[0]);
+			break;
+		}
+	};
+	infoSocket.onerror = function(errorEvent) {
+		console.log("Error in connection to " + wsServerUrl);
+	};
 });
 
 function wsConnect() {
