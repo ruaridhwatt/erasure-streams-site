@@ -15,7 +15,7 @@ $(document).ready(function() {
 		var c = received.split("\t");
 		switch (c[0]) {
 		case ("switch-server"):
-			wsClose();
+			infoSocket.close();
 			wsServerUrl = c[1];
 			wsConnect();
 			break;
@@ -76,7 +76,7 @@ function handleCommand(received) {
 		createStreamList(c);
 		break;
 	case ("switch-server"):
-		wsClose();
+		infoSocket.close();
 		wsServerUrl = c[1];
 		wsConnect();
 		break;
