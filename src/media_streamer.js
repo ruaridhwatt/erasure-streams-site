@@ -79,11 +79,11 @@ function SegmentFactory(initUrl, protocol, filename) {
 			}
 		};
 		socket.onmessage = function(messageEv) {
-			command = null;
 			var received = messageEv.data;
 			if (typeof received == "string") {
 				handleCommand(received);
 			} else {
+				command = null;
 				convertData(received);
 			}
 		};
@@ -105,7 +105,7 @@ function SegmentFactory(initUrl, protocol, filename) {
 			if (!command) {
 				command = "get\t" + filename + "\t" + (++i);
 			}
-			console.log(command);
+			console.log(protocol + ": " + command);
 			if (!socket) {
 				socket = new WebSocket(initUrl, protocol);
 				setSocketEventHandlers();
