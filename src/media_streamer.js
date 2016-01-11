@@ -57,7 +57,7 @@ function SegmentFactory(initUrl, protocol, filename) {
 		var c = received.split("\t");
 
 		switch (c[0]) {
-		case ("swith-server"):
+		case ("switch-server"):
 			socket.close();
 			socket = new WebSocket(c[1], protocol);
 			setSocketEventHandlers();
