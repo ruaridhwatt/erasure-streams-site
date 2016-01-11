@@ -16,7 +16,7 @@ $(document).ready(function() {
 		}
 	};
 	infoSocket.onerror = function(errorEvent) {
-		console.log("Error in connection to " + wsServerUrl);
+		console.log("Error in connection to " + "ws://" + document.location.host + ":" + nsPort);
 	};
 });
 

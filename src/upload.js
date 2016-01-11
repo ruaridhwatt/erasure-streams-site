@@ -1,4 +1,5 @@
-var wsServerUrl = "ws://localhost:8888";
+var wsServerUrl;
+var nsPort = 8888;
 var socket;
 var uploading = false;
 var intention = null;
@@ -20,7 +21,7 @@ $(document).ready(function() {
 		}
 	};
 	infoSocket.onerror = function(errorEvent) {
-		console.log("Error in connection to " + wsServerUrl);
+		console.log("Error in connection to " + "ws://" + document.location.host + ":" + nsPort);
 	};
 
 	$(document).on("change", ".btn-file :file", function(event) {
