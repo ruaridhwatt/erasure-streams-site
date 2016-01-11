@@ -11,17 +11,8 @@ $(document).ready(function() {
 	};
 	infoSocket.onmessage = function(messageEvent) {
 		var received = messageEvent.data;
-		console.log(received);
-		var c = received.split("\t");
-		switch (c[0]) {
-		case ("switch-server"):
-			infoSocket.close();
-			wsServerUrl = c[1];
-			wsConnect();
-			break;
-		default:
-			console.log("unknown command: " + c[0]);
-			break;
+		if (typeof received == "string") {
+			handleCommand(received);
 		}
 	};
 	infoSocket.onerror = function(errorEvent) {

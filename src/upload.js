@@ -3,13 +3,25 @@ var socket;
 var uploading = false;
 var intention = null;
 
-wsConnect();
-
 $(window).on("beforeunload", function() {
 	socket.close();
 });
 
 $(document).ready(function() {
+
+	socket = new WebSocket("ws://" + document.location.host + ":" + nsPort, "redirector");
+	socket.onopen = function(openEvent) {
+		console.log("NS socket Opened!");
+	};
+	socket.onmessage = function(messageEvent) {
+		var received = messageEvent.data;
+		if (typeof received == "string") {
+			handleCommand(received);
+		}
+	};
+	infoSocket.onerror = function(errorEvent) {
+		console.log("Error in connection to " + wsServerUrl);
+	};
 
 	$(document).on("change", ".btn-file :file", function(event) {
 		setProgressBar(0, 100);
