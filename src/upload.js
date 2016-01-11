@@ -20,7 +20,7 @@ $(document).ready(function() {
 			handleCommand(received);
 		}
 	};
-	infoSocket.onerror = function(errorEvent) {
+	socket.onerror = function(errorEvent) {
 		console.log("Error in connection to " + "ws://" + document.location.host + ":" + nsPort);
 	};
 
@@ -70,7 +70,7 @@ function handleCommand(received) {
 		intention = null;
 		uploadFile();
 		break;
-	case ("swith-server"):
+	case ("switch-server"):
 		socket.close();
 		wsServerUrl = c[1];
 		wsConnect();
