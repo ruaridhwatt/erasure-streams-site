@@ -1,3 +1,7 @@
+/**
+ * Creates an mpd object from the mpd string. provides codec information
+ * @param mpdStr The mpd file in string format
+ */
 function Mpd(mpdStr) {
 	this.audioCodecStr = null;
 	this.videoCodecStr = null;

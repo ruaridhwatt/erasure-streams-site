@@ -1,3 +1,5 @@
+
+
 var wsServerUrl;
 var nsPort = 8888;
 var socket;
@@ -8,6 +10,9 @@ $(window).on("beforeunload", function() {
 	socket.close();
 });
 
+/**
+ * Connects to the nameserver to be redirected to a media server
+ */
 $(document).ready(function() {
 
 	socket = new WebSocket("ws://" + document.location.host + ":" + nsPort, "redirector");
@@ -40,6 +45,9 @@ $(document).ready(function() {
 	});
 });
 
+/**
+ * Connects to a media server
+ */
 function wsConnect() {
 	console.log("Opening Websocket to " + wsServerUrl + "...");
 	socket = new WebSocket(wsServerUrl, "upload");
@@ -61,6 +69,10 @@ function wsConnect() {
 	};
 }
 
+/**
+ * Hanldes the received text based command
+ * @param received
+ */
 function handleCommand(received) {
 	var c = received.split("\t");
 	console.log(c);
@@ -81,6 +93,11 @@ function handleCommand(received) {
 	}
 }
 
+/**
+ * Creates a video tag for the given file
+ * @param file The file object
+ * @returns The video tag
+ */
 function buildVideo(file) {
 	var video = $("<video />", {
 		id : "video",
@@ -92,6 +109,9 @@ function buildVideo(file) {
 	return video;
 }
 
+/**
+ * Uploads the chosen file to the media server
+ */
 function uploadFile() {
 	var file = $(".btn-file :file").prop("files")[0];
 	if (file && !uploading) {

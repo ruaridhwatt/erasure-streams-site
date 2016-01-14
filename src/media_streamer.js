@@ -1,3 +1,10 @@
+/**
+ * Media Streamer object. Streams audio and video to the video element.
+ * @param filename The video filename
+ * @param mpd The MPD object
+ * @param serverUrl The initial media server url
+ * @param videoElem The video element to show the stream in
+ */
 function MediaStreamer(filename, mpd, serverUrl, videoElem) {
 	var mediaSource = new MediaSource;
 	mediaSource.addEventListener('sourceopen', onSourceOpen);
@@ -21,6 +28,11 @@ function MediaStreamer(filename, mpd, serverUrl, videoElem) {
 
 }
 
+/**
+ * The track object. Fills the source buffer of the Media Source.
+ * @param sourceBuffer The Media source buffer to be filled
+ * @param segmentFactory
+ */
 function StreamedTrack(sourceBuffer, segmentFactory) {
 
 	var appendData = function(res) {
@@ -37,6 +49,12 @@ function StreamedTrack(sourceBuffer, segmentFactory) {
 	segmentFactory.next();
 }
 
+/**
+ * Produces data segments by querying the inital url for the required data
+ * @param initUrl The url of the initial media server to contact
+ * @param protocol The protocol to use
+ * @param filename The name of the video to stream
+ */
 function SegmentFactory(initUrl, protocol, filename) {
 
 	var socket = null;

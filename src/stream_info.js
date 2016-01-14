@@ -4,6 +4,9 @@ var infoSocket = null;
 var command = "lst";
 var streamer;
 
+/**
+ * Connects to the nameserver to be redirected to a media server
+ */
 $(document).ready(function() {
 	infoSocket = new WebSocket("ws://" + document.location.host + ":" + nsPort, "redirector");
 	infoSocket.onopen = function(openEvent) {
@@ -20,6 +23,9 @@ $(document).ready(function() {
 	};
 });
 
+/**
+ * Connects to a media server
+ */
 function wsConnect() {
 	console.log("Opening Info Websocket to " + wsServerUrl + "...");
 	infoSocket = new WebSocket(wsServerUrl, "info");
@@ -59,6 +65,10 @@ $(window).on("beforeunload", function() {
 	infoSocket.close();
 });
 
+/**
+ * Hanldes the received text based command
+ * @param received
+ */
 function handleCommand(received) {
 	var c = received.split("\t");
 	switch (c[0]) {
@@ -83,6 +93,9 @@ function handleCommand(received) {
 	}
 }
 
+/**
+ * Creates and appends list items to the dropdown list of streams from the provided string array (streams).
+ */
 function createStreamList(streams) {
 	var list = "";
 	for ( var i = 1; i < streams.length; i++) {
@@ -95,6 +108,9 @@ function createStreamList(streams) {
 	});
 }
 
+/**
+ * Starts the streaming process
+ */
 function startStreaming() {
 	command = "mpd\t" + filename;
 	infoSocket.send(command);
